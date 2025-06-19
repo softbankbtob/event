@@ -1,0 +1,144 @@
+.sbw-featured-session-wrapper + .sbw-featured-session-wrapper{
+  margin-top: 40px;
+}
+
+.sbw-featured-session a{
+  display: block;
+  color: var(--text-black);
+  border-radius: 8px;
+  border: 1px solid var(--border-gray-dark);
+  overflow: hidden;
+  transition: transform 0.3s ease;
+
+  &:hover{
+    transform: scale(1.02);
+  }
+}
+
+.sbw-featured-session-inner{
+  background-color: var(--background-color);
+  padding: 40px;
+
+  @media (max-width: 768px) {
+    padding: 24px;
+  }
+}
+
+.sbw-featured-session-tag{
+  display: inline-block;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.25;
+  padding: 4px 40px;
+  border-radius: 100px;
+  width: fit-content;
+  background-color: var(--background-purple-01);
+  color: var(--background-color);
+}
+
+.sbw-featured-session-inner .sbw-featured-session-tag + h3{
+  margin-top: 16px;
+}
+
+.sbw-featured-session-inner h3{
+  font-size: 24px;
+  margin-top: 0;
+}
+
+.sbw-featured-session-content-wrapper{
+  display: flex;
+  gap: 24px 16px;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 32px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+    margin-top: 16px;
+  }
+}
+
+.sbw-featured-session-content{
+  display: flex;
+  width: calc((100% - 24px) / 2);
+  gap: 32px;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    gap: 16px;
+  }
+}
+
+.sbw-featured-session-image{
+  flex-basis: 100px;
+  height: 100px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.sbw-featured-session-image img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sbw-featured-session-text{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+
+  @media (max-width: 768px) {
+    justify-content: flex-start;
+  }
+}
+
+.sbw-featured-session-position,
+.sbw-featured-session-name{
+  line-height: 1.5;
+}
+
+.sbw-featured-session-position{
+  font-size: 14px;
+}
+
+.sbw-featured-session-name{
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.sbw-featured-session-readmore{
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-white);
+  font-weight: 700;
+  background-color: var(--background-black-03);
+  padding: 17px;
+
+  @media (max-width: 768px) {
+    padding: 13px 16px;
+  }
+}
+
+.sbw-featured-session-readmore:after{
+  content: '';
+  display: block;
+  width: 1em;
+  height: 1em;
+  background: url("../../icons/icon-plus.svg") no-repeat center / contain !important;
+  margin: 0 !important;
+}
+
+.sbw-featured-session-readmore span{
+  display: block;
+  width: 270px;
+  font-size: 16px;
+  text-align: center;
+}
+
