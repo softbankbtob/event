@@ -1,166 +1,204 @@
 import { getMetadata } from '../../scripts/aem.js';
 import { loadFragment } from '../fragment/fragment.js';
+// import { buildBreadcrumbs } from '../../scripts/scripts.js';
 
-// media query match that indicates mobile/tablet width
-const isDesktop = window.matchMedia('(min-width: 900px)');
-
-function closeOnEscape(e) {
-  if (e.code === 'Escape') {
-    const nav = document.getElementById('nav');
-    const navSections = nav.querySelector('.nav-sections');
-    const navSectionExpanded = navSections.querySelector('[aria-expanded="true"]');
-    if (navSectionExpanded && isDesktop.matches) {
-      // eslint-disable-next-line no-use-before-define
-      toggleAllNavSections(navSections);
-      navSectionExpanded.focus();
-    } else if (!isDesktop.matches) {
-      // eslint-disable-next-line no-use-before-define
-      toggleMenu(nav, navSections);
-      nav.querySelector('button').focus();
-    }
-  }
-}
-
-function closeOnFocusLost(e) {
-  const nav = e.currentTarget;
-  if (!nav.contains(e.relatedTarget)) {
-    const navSections = nav.querySelector('.nav-sections');
-    const navSectionExpanded = navSections.querySelector('[aria-expanded="true"]');
-    if (navSectionExpanded && isDesktop.matches) {
-      // eslint-disable-next-line no-use-before-define
-      toggleAllNavSections(navSections, false);
-    } else if (!isDesktop.matches) {
-      // eslint-disable-next-line no-use-before-define
-      toggleMenu(nav, navSections, false);
-    }
-  }
-}
-
-function openOnKeydown(e) {
-  const focused = document.activeElement;
-  const isNavDrop = focused.className === 'nav-drop';
-  if (isNavDrop && (e.code === 'Enter' || e.code === 'Space')) {
-    const dropExpanded = focused.getAttribute('aria-expanded') === 'true';
-    // eslint-disable-next-line no-use-before-define
-    toggleAllNavSections(focused.closest('.nav-sections'));
-    focused.setAttribute('aria-expanded', dropExpanded ? 'false' : 'true');
-  }
-}
-
-function focusNavSection() {
-  document.activeElement.addEventListener('keydown', openOnKeydown);
-}
+// PC/SPの切り替えのためのメディアクエリ
+const isDesktop = window.matchMedia('(min-width: 769px)');
 
 /**
- * Toggles all nav sections
- * @param {Element} sections The container element
- * @param {Boolean} expanded Whether the element should be expanded or collapsed
+ * ナビゲーションセクション全体を切り替える
+ * @param {Element} sections ナビゲーションセクションのコンテナ
+ * @param {Boolean} expanded 展開状態
  */
 function toggleAllNavSections(sections, expanded = false) {
   sections.querySelectorAll('.nav-sections .default-content-wrapper > ul > li').forEach((section) => {
-    section.setAttribute('aria-expanded', expanded);
+    if (section.classList.contains('nav-drop')) {
+      section.setAttribute('aria-expanded', expanded);
+    }
   });
 }
 
 /**
- * Toggles the entire nav
- * @param {Element} nav The container element
- * @param {Element} navSections The nav sections within the container element
- * @param {*} forceExpanded Optional param to force nav expand behavior when not null
+ * SPメニューの表示/非表示を切り替える
+ */
+function toggleSPMenu() {
+  const spMenu = document.querySelector('.sp-menu');
+  if (spMenu) {
+    const isOpen = spMenu.classList.contains('is-open');
+    spMenu.classList.toggle('is-open');
+    document.body.style.overflow = isOpen ? '' : 'hidden';
+    
+    // ハンバーガーメニューにactiveクラスを追加/削除
+    const hamburgerMenu = document.querySelector('.hamburger-menu');
+    if (hamburgerMenu) {
+      hamburgerMenu.classList.toggle('is-active', !isOpen);
+    }
+  }
+}
+
+/**
+ * メニューの表示/非表示を切り替える
+ * @param {Element} nav ナビゲーション要素
+ * @param {Element} navSections ナビゲーションセクション
+ * @param {Boolean} forceExpanded 強制的に展開状態を設定する場合の値
  */
 function toggleMenu(nav, navSections, forceExpanded = null) {
-  const expanded = forceExpanded !== null ? !forceExpanded : nav.getAttribute('aria-expanded') === 'true';
-  const button = nav.querySelector('.nav-hamburger button');
-  document.body.style.overflowY = (expanded || isDesktop.matches) ? '' : 'hidden';
-  nav.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-  toggleAllNavSections(navSections, expanded || isDesktop.matches ? 'false' : 'true');
-  button.setAttribute('aria-label', expanded ? 'Open navigation' : 'Close navigation');
-  // enable nav dropdown keyboard accessibility
-  const navDrops = navSections.querySelectorAll('.nav-drop');
-  if (isDesktop.matches) {
-    navDrops.forEach((drop) => {
-      if (!drop.hasAttribute('tabindex')) {
-        drop.setAttribute('tabindex', 0);
-        drop.addEventListener('focus', focusNavSection);
-      }
-    });
-  } else {
-    navDrops.forEach((drop) => {
-      drop.removeAttribute('tabindex');
-      drop.removeEventListener('focus', focusNavSection);
-    });
-  }
+  const expanded = forceExpanded !== null ? forceExpanded : nav.getAttribute('aria-expanded') === 'true';
+  const isSP = !isDesktop.matches;
 
-  // enable menu collapse on escape keypress
-  if (!expanded || isDesktop.matches) {
-    // collapse menu on escape press
-    window.addEventListener('keydown', closeOnEscape);
-    // collapse menu on focus lost
-    nav.addEventListener('focusout', closeOnFocusLost);
+  nav.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+
+  if (isSP) {
+    // SP表示時は全体のトグルのみ
+    navSections.style.display = expanded ? 'none' : 'block';
   } else {
-    window.removeEventListener('keydown', closeOnEscape);
-    nav.removeEventListener('focusout', closeOnFocusLost);
+    // PC表示時は各セクションのトグル
+    toggleAllNavSections(navSections, expanded);
   }
 }
 
 /**
- * loads and decorates the header, mainly the nav
- * @param {Element} block The header block element
+ * ボタンの処理
+ * @param {HTMLElement} element 対象要素
+ * @param {string} newClassName 新しいクラス名
+ * @param {string} newContainerClassName 新しいコンテナクラス名
+ */
+const processButton = (element, newClassName, newContainerClassName) => {
+  const button = element.querySelector('.button');
+  if (button) {
+    button.className = newClassName;
+    button.closest('.button-container').className = newContainerClassName;
+  }
+};
+
+/**
+ * SPメニュー用のHTMLを作成
+ * PCのヘッダーメニューとボタンを複製してSPメニューとして使用
+ * @param {HTMLElement} headerMenu ヘッダーメニュー要素
+ * @param {HTMLElement} headerBtn ヘッダーボタン要素
+ * @returns {HTMLElement} 作成したSPメニュー要素
+ */
+function createSPMenu(headerMenu, headerBtn) {
+  const spMenu = document.createElement('div');
+  spMenu.className = 'sp-menu';
+  
+  // SPメニューコンテンツ部分
+  const spMenuContent = document.createElement('div');
+  spMenuContent.className = 'sp-menu-content';
+  
+  // PCのヘッダーメニューを複製
+  if (headerMenu) {
+    const menuClone = headerMenu.cloneNode(true);
+    spMenuContent.appendChild(menuClone);
+  }
+  
+  // PCのボタン部分を複製
+  if (headerBtn) {
+    const btnClone = headerBtn.cloneNode(true);
+    spMenuContent.appendChild(btnClone);
+  }
+  
+  spMenu.appendChild(spMenuContent);
+  return spMenu;
+}
+
+/**
+ * ヘッダーを読み込み、初期化する
+ * @param {HTMLElement} block ヘッダーブロック要素
  */
 export default async function decorate(block) {
-  // load nav as fragment
+  // フラグメントの読み込み
   const navMeta = getMetadata('nav');
-  const navPath = navMeta ? new URL(navMeta, window.location).pathname : '/nav';
+  const navPath = navMeta ? new URL(navMeta, window.location).pathname : '/header';
   const fragment = await loadFragment(navPath);
 
-  // decorate nav DOM
+  // 既存コンテンツのクリア
   block.textContent = '';
-  const nav = document.createElement('nav');
-  nav.id = 'nav';
-  while (fragment.firstElementChild) nav.append(fragment.firstElementChild);
-
-  const classes = ['brand', 'sections', 'tools'];
-  classes.forEach((c, i) => {
-    const section = nav.children[i];
-    if (section) section.classList.add(`nav-${c}`);
-  });
-
-  const navBrand = nav.querySelector('.nav-brand');
-  const brandLink = navBrand.querySelector('.button');
-  if (brandLink) {
-    brandLink.className = '';
-    brandLink.closest('.button-container').className = '';
+  
+  // ハンバーガーメニューの作成
+  const hamburgerDiv = document.createElement('div');
+  hamburgerDiv.className = 'hamburger-container';
+  
+  const hamburgerBtn = document.createElement('button');
+  hamburgerBtn.className = 'hamburger-menu';
+  hamburgerBtn.innerHTML = `<span></span><span></span><span></span>`;
+  
+  hamburgerDiv.appendChild(hamburgerBtn);
+  block.appendChild(hamburgerDiv);
+  
+  // フラグメントコンテンツの追加
+  while (fragment.firstElementChild) {
+    block.append(fragment.firstElementChild);
   }
-
-  const navSections = nav.querySelector('.nav-sections');
-  if (navSections) {
-    navSections.querySelectorAll(':scope .default-content-wrapper > ul > li').forEach((navSection) => {
-      if (navSection.querySelector('ul')) navSection.classList.add('nav-drop');
-      navSection.addEventListener('click', () => {
-        if (isDesktop.matches) {
-          const expanded = navSection.getAttribute('aria-expanded') === 'true';
-          toggleAllNavSections(navSections);
-          navSection.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+  
+  // ヘッダー内の要素にクラスを付与
+  const headerDivs = Array.from(block.querySelectorAll('.header > div')).filter(div => 
+    !div.classList.contains('hamburger-container')
+  );
+  
+  if (headerDivs.length >= 3) {
+    headerDivs[0].classList.add('header-logo');
+    headerDivs[1].classList.add('header-menu');
+    headerDivs[2].classList.add('header-btn');
+  }
+  
+  // ロゴボタンの処理
+  const headerLogo = block.querySelector('.header-logo');
+  if (headerLogo) {
+    processButton(headerLogo, 'logo-link', 'logo');
+  }
+  
+  // ヘッダーメニューとヘッダーボタンの取得
+  const headerMenu = block.querySelector('.header-menu');
+  const headerBtn = block.querySelector('.header-btn');
+  
+  // default-content-wrapperのdivをnavタグに変更
+  if (headerMenu) {
+    const defaultContentWrapper = headerMenu.querySelector('.default-content-wrapper');
+    if (defaultContentWrapper) {
+      const navElement = document.createElement('nav');
+      navElement.className = defaultContentWrapper.className;
+      
+      while (defaultContentWrapper.firstChild) {
+        navElement.appendChild(defaultContentWrapper.firstChild);
+      }
+      
+      defaultContentWrapper.replaceWith(navElement);
+    }
+  }
+  
+  // SPメニューの作成
+  const spMenu = createSPMenu(headerMenu, headerBtn);
+  
+  // SPメニューをヘッダー内に追加
+  block.appendChild(spMenu);
+  
+  // イベントリスナーの設定
+  hamburgerBtn.addEventListener('click', toggleSPMenu);
+  
+  // 画面サイズ変更時の処理
+  const mediaQueryHandler = (e) => {
+    if (e.matches) {
+      // PCサイズの場合
+      hamburgerDiv.style.display = 'none';
+      
+      // SPメニューが開いていれば閉じる
+      if (spMenu.classList.contains('is-open')) {
+        spMenu.classList.remove('is-open');
+        document.body.style.overflow = '';
+        
+        // ハンバーガーメニューのアクティブ状態も解除
+        if (hamburgerBtn.classList.contains('is-active')) {
+          hamburgerBtn.classList.remove('is-active');
         }
-      });
-    });
-  }
-
-  // hamburger for mobile
-  const hamburger = document.createElement('div');
-  hamburger.classList.add('nav-hamburger');
-  hamburger.innerHTML = `<button type="button" aria-controls="nav" aria-label="Open navigation">
-      <span class="nav-hamburger-icon"></span>
-    </button>`;
-  hamburger.addEventListener('click', () => toggleMenu(nav, navSections));
-  nav.prepend(hamburger);
-  nav.setAttribute('aria-expanded', 'false');
-  // prevent mobile nav behavior on window resize
-  toggleMenu(nav, navSections, isDesktop.matches);
-  isDesktop.addEventListener('change', () => toggleMenu(nav, navSections, isDesktop.matches));
-
-  const navWrapper = document.createElement('div');
-  navWrapper.className = 'nav-wrapper';
-  navWrapper.append(nav);
-  block.append(navWrapper);
+      }
+    } else {
+      // SPサイズの場合
+      hamburgerDiv.style.display = 'block';
+    }
+  };
+  
+  // メディアクエリイベントの登録と初期実行
+  isDesktop.addEventListener('change', mediaQueryHandler);
+  mediaQueryHandler(isDesktop);
 }
